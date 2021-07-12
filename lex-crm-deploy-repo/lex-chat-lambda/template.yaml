@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  lex-chat-crm
+
+  SAM Template for lex-chat-crm
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  InfraStackName:
+    Description: Existing Infra stack name
+    Type: String
+    Default: AppInfraStack
+
+Resources:
+  LexChatFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: lexchatcrm/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          CRM_API_URL: <url>
+          SF_DOMAIN: <domain>
+
+      Role: <role_arn>
+      Layers:
+        - !Ref libs
+
+  libs:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: lexchatcrm-python-lib
+      Description: Dependencies for the Lex CRM app.
+      ContentUri: package/.
+      CompatibleRuntimes:
+        - python3.8
+
+Outputs:
+  LexChatFunction:
+    Description: "Lex Chat Lambda Function ARN"
+    Value: !GetAtt LexChatFunction.Arn

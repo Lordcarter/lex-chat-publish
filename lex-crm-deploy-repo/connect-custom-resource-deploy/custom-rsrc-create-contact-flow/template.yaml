@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  custom-rsrc-create-contact-flow
+
+  Sample SAM Template for custom-rsrc-create-contact-flow
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  InfraStackName:
+    Description: Existing Infra stack name
+    Type: String
+    Default: ContactFlowCustStack
+
+Resources:
+  ContactFlowCreateLambda:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: createflowlambda/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          FLOW_INSTANCEID: <instance_id>
+          FLOW_CONTACT_ID: <flow_id>
+          FLOW_NAME: <flow_name>
+      Role: <role_arn>
+      Layers:
+        - !Ref libs
+
+  libs:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: contactflow-cust-python-lib
+      Description: Dependencies for the custom resource.
+      ContentUri: package/.
+      CompatibleRuntimes:
+        - python3.8
+
+Outputs:
+  CustFlowCreateFunction:
+    Description: "Lambda Function ARN"
+    Export: 
+      Name: !Sub ${AWS::StackName}::ContactFlowCreateLambda
+    Value: !GetAtt ContactFlowCreateLambda.Arn

@@ -1,0 +1,148 @@
+pipeline{
+    agent any
+    environment{
+        AWS_ACCESS_KEY_ID=credentials('awsaccesskey')
+        AWS_SECRET_ACCESS_KEY=credentials('awssecretkey')
+        AWS_DEFAULT_REGION="us-east-1"
+        FIRST_DEPLOY="NO"
+        SKIP="N"
+        CHATUIBUCKET="<bucket>"
+        BACKAPIFILESBUCKET="<bucket>"
+        SKIPPERM="Y"
+    }
+
+    stages{
+        stage("Deploy the Infrastructure"){
+            parallel{
+                stage('Lex Chat Lambda'){
+                    when{
+                        environment name:'SKIP',value:'N'
+                    }
+                    stages{
+                        stage('Run Tests'){
+                            steps{
+                                echo 'Run tests here'
+                            }
+                        }
+                        stage('Deploy Lambda'){
+                            steps{
+                                bat '''
+                                cd lex-chat-lambda
+                                mkdir -p package
+                                python -m pip install -r requirements.txt -t package
+                                sam build'''
+
+                                bat '''
+                                cd lex-chat-lambda
+                                sam deploy --no-fail-on-empty-changeset'''
+                            }
+                        }
+                        stage('Add Resource Policy'){
+                            when{
+                                environment name:'SKIPPERM',value:'N'
+                            }
+                            steps{
+                                script{
+                                    env.LEXLAMBDAARN=sh(label:'',script:'aws cloudformation describe-stacks --stack-name lexchatcrm-app --query "Stacks[0].Outputs[?OutputKey==\'LexChatFunction\'].OutputValue" --output text',returnStdout: true).trim()
+                                }
+                                sh 'aws lambda add-permission --function-name $LEXLAMBDAARN --action lambda:InvokeFunction --statement-id lexpermissions --principal lex.amazonaws.com --output text'
+                            }
+                        }
+                    }                    
+            
+                }
+
+                stage('Deploy Call Flow'){
+                    when{
+                        environment name:'SKIP',value:'N'
+                    }
+                    stages{
+                        stage('Run Tests'){
+                            steps{
+                                echo 'Run tests here'
+                            }
+                        }
+                        stage('Deploy Lambda for Custom Resource'){
+                            steps{
+                                bat '''
+                                cd connect-custom-resource-deploy/custom-rsrc-create-contact-flow
+                                mkdir -p package
+                                python -m pip install -r requirements.txt -t package
+                                sam build'''
+
+                                bat '''
+                                cd connect-custom-resource-deploy/custom-rsrc-create-contact-flow
+                                sam deploy --no-fail-on-empty-changeset'''
+                            }
+                        }
+                        stage('Deploy Custom resource Stack'){
+                            steps{
+                                bat '''
+                                cd connect-custom-resource-deploy
+                                aws cloudformation deploy --stack-name ContactFlowCustStack --template-file ./customCF.yml --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM'''
+
+                               
+                            }
+                        }
+                    }                    
+            
+                }
+
+                stage('Deploy Chat UI'){
+                    when{
+                        environment name:'SKIP',value:'N'
+                    }
+                    stages{
+                        stage('Run Tests'){
+                            steps{
+                                echo 'Run tests here'
+                            }
+                        }
+                        stage('Deploy UI App'){
+                            steps{
+                                sh '''
+                                cd connect-chat-ui
+                                aws s3 cp . s3://${CHATUIBUCKET} --recursive'''
+                            }
+                        }
+                    }                    
+            
+                }
+
+                stage('Deploy Backend API'){
+                    when{
+                        environment name:'SKIP',value:'N'
+                    }
+                    stages{
+                        stage('Run Tests'){
+                            steps{
+                                echo 'Run tests here'
+                            }
+                        }
+                        stage('Copy Files'){
+                            steps{
+                                sh '''
+                                cd connect-chat-backend-api
+                                aws s3 cp . s3://${BACKAPIFILESBUCKET}/deployment --recursive
+                                '''
+                            }
+                        }
+                        stage('Deploy API'){
+                            steps{
+                                bat '''
+                                cd connect-chat-backend-api
+                                aws cloudformation deploy --template-file ./backedAPICF.yml --stack-name chat-backend-api-stack --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+                                '''
+
+                            }
+                        }
+                    }                    
+            
+                }
+            }
+        }
+        
+    }
+
+
+}

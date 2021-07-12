@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  InfraStackName:
+    Description: Existing Infra stack name
+    Type: String
+    Default: deploy-custom-resource-flow-app
+
+Resources:
+  ContactFlowCustomResource:
+    Type: Custom::DeployFlowLambda 
+    Properties:
+      ServiceToken: 
+        Fn::ImportValue: !Sub "${InfraStackName}::ContactFlowCreateLambda"
+  

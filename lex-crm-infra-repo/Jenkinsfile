@@ -1,0 +1,117 @@
+pipeline{
+    agent any
+    environment{
+        AWS_ACCESS_KEY_ID=credentials('awsaccesskey')
+        AWS_SECRET_ACCESS_KEY=credentials('awssecretkey')
+        AWS_DEFAULT_REGION="us-east-1"
+        FIRST_DEPLOY="NO"
+        SKIP="N"
+    }
+
+    stages{
+        stage("Create Terraform State Buckets"){
+            steps{
+                sh'''
+                aws s3 mb <bucket_1>
+                aws s3 mb <bucket_2>
+                aws s3 mb <bucket_3>
+                aws s3 mb <bucket_4>'''
+            }
+        }
+        stage("Deploy the Infrastructure"){
+            parallel{
+                stage('Lex Chat Lambda Infra'){
+                    when{
+                        environment name:'SKIP',value:'N'
+                    }
+                    stages{
+                        stage('Validate Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/lex-chat-lambda-infra
+                                terraform validate'''
+                            }
+                        }
+                        stage('Deploy Lambda Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/lex-chat-lambda-infra
+                                terraform init
+                                terraform plan -out outfile
+                                terraform apply outfile'''
+                            }
+                        }
+                    }                    
+            
+                }
+
+                stage('Connect custom Resource supporting Infra'){
+                    when{
+                        environment name:'SKIP',value:'N'
+                    }
+                    stages{
+                        stage('Validate Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/connect-custom-resource-infra
+                                terraform validate'''
+                            }
+                        }
+                        stage('Deploy Call Flow Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/connect-custom-resource-infra
+                                terraform init
+                                terraform plan -out outfile
+                                terraform apply outfile'''
+                            }
+                        }
+                    }  
+                }
+
+                stage('Infra for Connect Chat UI'){
+                    stages{
+                        stage('Validate Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/connect-chat-ui-infra
+                                terraform validate'''
+                            }
+                        }
+                        stage('Deploy UI Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/connect-chat-ui-infra
+                                terraform init
+                                terraform plan -out outfile
+                                terraform apply outfile'''
+                            }
+                        }
+                    }  
+                }
+
+                stage('Infra for Connect Chat Backend API'){
+                    stages{
+                        stage('Validate Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/connect-chat-backend-api-infra
+                                terraform validate'''
+                            }
+                        }
+                        stage('Deploy Backend Infra'){
+                            steps{
+                                sh '''
+                                cd infra_templates/connect-chat-backend-api-infra
+                                terraform init
+                                terraform plan -out outfile
+                                terraform apply outfile'''
+                            }
+                        }
+                    }  
+                    
+                }
+            }
+        }
+    }
+}
