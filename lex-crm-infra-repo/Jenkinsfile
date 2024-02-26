@@ -7,7 +7,9 @@ pipeline{
         FIRST_DEPLOY="NO"
         SKIP="N"
     }
-
+    tools {
+      terraform 'terraform'
+    }
     stages{
         stage("Create Terraform State Buckets"){
             steps{
@@ -18,6 +20,13 @@ pipeline{
                 aws s3 mb s3://lordcarterlexconnect4'''
             }
         }
+        stage('Git Checkout') {
+            steps {
+                echo 'Cloning the application code...'
+                git branch: 'main', url: 'https://github.com/Lordcarter/lex-chat-publish.git'
+            }
+        }
+
         stage("Deploy the Infrastructure"){
             parallel{
                 stage('Lex Chat Lambda Infra'){
@@ -27,18 +36,16 @@ pipeline{
                     stages{
                         stage('Validate Infra'){
                             steps{
-                                sh '''
-                                cd infra_templates/lex-chat-lambda-infra
-                                terraform validate'''
-                            }
-                        }
-                        stage('Deploy Lambda Infra'){
-                            steps{
-                                sh '''
-                                cd infra_templates/lex-chat-lambda-infra
-                                terraform init
-                                terraform plan -out outfile
-                                terraform apply outfile'''
+                                script{
+                                    dir ('infra_templates/lex-chat-lambda-infra') {
+                                        sh 'terraform init'
+                                        sh 'terraform fmt'
+                                        sh 'terraform validate'
+                                        sh 'terraform plan -out outfile'
+                                        sh 'terraform apply outfile'
+                                    }
+                                }
+        
                             }
                         }
                     }                    
