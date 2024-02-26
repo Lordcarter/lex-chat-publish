@@ -12,10 +12,10 @@ pipeline{
         stage("Create Terraform State Buckets"){
             steps{
                 sh'''
-                aws s3 mb lordcarterlexconnect1
-                aws s3 mb lordcarterlexconnect2
-                aws s3 mb lordcarterlexconnect3
-                aws s3 mb lordcarterlexconnect4'''
+                aws s3 mb s3://lordcarterlexconnect1
+                aws s3 mb s3://lordcarterlexconnect2
+                aws s3 mb s3://lordcarterlexconnect3
+                aws s3 mb s3://lordcarterlexconnect4'''
             }
         }
         stage("Deploy the Infrastructure"){
