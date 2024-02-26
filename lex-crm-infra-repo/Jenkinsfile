@@ -60,14 +60,14 @@ pipeline{
                         stage('Validate Infra'){
                             steps{
                                 sh '''
-                                cd infra_templates/connect-custom-resource-infra
+                                cd lex-crm-infra-repo/infra_templates/connect-custom-resource-infra
                                 terraform validate'''
                             }
                         }
                         stage('Deploy Call Flow Infra'){
                             steps{
                                 sh '''
-                                cd infra_templates/connect-custom-resource-infra
+                                cd lex-crm-infra-repo/infra_templates/connect-custom-resource-infra
                                 terraform init
                                 terraform plan -out outfile
                                 terraform apply outfile'''
@@ -81,14 +81,14 @@ pipeline{
                         stage('Validate Infra'){
                             steps{
                                 sh '''
-                                cd infra_templates/connect-chat-ui-infra
+                                cd lex-crm-infra-repo/infra_templates/connect-chat-ui-infra
                                 terraform validate'''
                             }
                         }
                         stage('Deploy UI Infra'){
                             steps{
                                 sh '''
-                                cd infra_templates/connect-chat-ui-infra
+                                cd lex-crm-infra-repo/infra_templates/connect-chat-ui-infra
                                 terraform init
                                 terraform plan -out outfile
                                 terraform apply outfile'''
@@ -102,14 +102,14 @@ pipeline{
                         stage('Validate Infra'){
                             steps{
                                 sh '''
-                                cd infra_templates/connect-chat-backend-api-infra
+                                cd lex-crm-infra-repo/infra_templates/connect-chat-backend-api-infra
                                 terraform validate'''
                             }
                         }
                         stage('Deploy Backend Infra'){
                             steps{
                                 sh '''
-                                cd infra_templates/connect-chat-backend-api-infra
+                                cd lex-crm-infra-repo/infra_templates/connect-chat-backend-api-infra
                                 terraform init
                                 terraform plan -out outfile
                                 terraform apply outfile'''
