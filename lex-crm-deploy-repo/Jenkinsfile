@@ -19,7 +19,7 @@ pipeline{
                         environment name:'SKIP',value:'N'
                     }
                     stages{
-                        stage('Run Tests'){
+                        stage('Run Tests 2'){
                             steps{
                                 echo 'Run tests here'
                             }
